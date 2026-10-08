@@ -1,7 +1,5 @@
--- Enable Foreign Keys for SQLite
 PRAGMA foreign_keys = ON;
 
--- 1. Create Tables
 CREATE TABLE students (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -23,58 +21,43 @@ CREATE TABLE enrollments (
     UNIQUE(student_id, course_id)
 );
 
--- 2. Insert Sample Data (Added Diana to test Query 4)
 INSERT INTO students (name, email) VALUES 
 ('Alice Johnson', 'alice@example.com'),
 ('Bob Smith', 'bob@example.com'),
 ('Charlie Brown', 'charlie@example.com'),
-('Diana Prince', 'diana@example.com'); -- No enrollments
+('Diana Prince', 'diana@example.com');
 
 INSERT INTO courses (title) VALUES 
-('Mathematics'),
-('Science'),
-('History');
+('Mathematics'), ('Science'), ('History');
 
 INSERT INTO enrollments (student_id, course_id, grade) VALUES 
-(1, 1, 'A'), -- Alice in Math
-(1, 2, 'B'), -- Alice in Science
-(2, 1, 'C'), -- Bob in Math
-(3, 3, 'A'), -- Charlie in History
-(2, 2, 'B'); -- Bob in Science
+(1, 1, 'A'), (1, 2, 'B'), (2, 1, 'C'), (3, 3, 'A'), (2, 2, 'B');
 
--- 3. Five Queries
-
--- Query 1: All courses for one student (by name)
-SELECT c.title 
-FROM courses c
+-- Query 1: All courses for one student
+SELECT c.title FROM courses c
 JOIN enrollments e ON c.id = e.course_id
 JOIN students s ON s.id = e.student_id
 WHERE s.name = 'Alice Johnson';
 
 -- Query 2: All students on one course
-SELECT s.name 
-FROM students s
+SELECT s.name FROM students s
 JOIN enrollments e ON s.id = e.student_id
 JOIN courses c ON c.id = e.course_id
 WHERE c.title = 'Mathematics';
 
--- Query 3: The number of students per course
+-- Query 3: Number of students per course
 SELECT c.title, COUNT(e.student_id) AS student_count
-FROM courses c
-LEFT JOIN enrollments e ON c.id = e.course_id
+FROM courses c LEFT JOIN enrollments e ON c.id = e.course_id
 GROUP BY c.id;
 
--- Query 4: Students who have no enrollments
-SELECT s.name 
-FROM students s
+-- Query 4: Students with no enrollments
+SELECT s.name FROM students s
 LEFT JOIN enrollments e ON s.id = e.student_id
 WHERE e.id IS NULL;
 
 -- Query 5: Update an enrollment's grade
-UPDATE enrollments 
-SET grade = 'A+' 
+UPDATE enrollments SET grade = 'A+' 
 WHERE student_id = (SELECT id FROM students WHERE name = 'Alice Johnson') 
-  AND course_id = (SELECT id FROM courses WHERE title = 'Mathematics');
+AND course_id = (SELECT id FROM courses WHERE title = 'Mathematics');
 
--- Verify the update
 SELECT * FROM enrollments WHERE student_id = 1 AND course_id = 1;
