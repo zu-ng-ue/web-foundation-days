@@ -1,3 +1,6 @@
+-- Enable Foreign Keys for SQLite
+PRAGMA foreign_keys = ON;
+
 -- 1. Create Tables
 CREATE TABLE students (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,14 +20,15 @@ CREATE TABLE enrollments (
     grade TEXT,
     FOREIGN KEY (student_id) REFERENCES students(id),
     FOREIGN KEY (course_id) REFERENCES courses(id),
-    UNIQUE(student_id, course_id) -- Prevents duplicate enrollment
+    UNIQUE(student_id, course_id)
 );
 
--- 2. Insert Sample Data
+-- 2. Insert Sample Data (Added Diana to test Query 4)
 INSERT INTO students (name, email) VALUES 
 ('Alice Johnson', 'alice@example.com'),
 ('Bob Smith', 'bob@example.com'),
-('Charlie Brown', 'charlie@example.com');
+('Charlie Brown', 'charlie@example.com'),
+('Diana Prince', 'diana@example.com'); -- No enrollments
 
 INSERT INTO courses (title) VALUES 
 ('Mathematics'),
