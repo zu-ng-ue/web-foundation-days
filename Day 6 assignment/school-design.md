@@ -15,3 +15,6 @@ I would add an index on the `student_id` and `course_id` columns in the `enrollm
 ```sql
 CREATE INDEX idx_enrollments_student ON enrollments(student_id);
 CREATE INDEX idx_enrollments_course ON enrollments(course_id);
+
+## SQL vs. NoSQL Decision
+For this school system, I would choose **SQL (Relational Database)**. The data is highly structured, consistent, and requires strict integrity constraints (e.g., a student must exist before enrolling, emails must be unique). SQL's support for ACID transactions, foreign keys, and complex `JOIN` queries makes it the ideal choice for handling structured academic records. NoSQL would be better suited for unstructured data, massive horizontal scaling without strict schemas, or rapid prototyping where relationships are not the primary concern.
