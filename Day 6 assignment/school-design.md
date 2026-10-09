@@ -1,20 +1,36 @@
 # School Database Design
-
-## Table Explanations
-*   **students:** Stores the personal information of the students. It includes a unique `id` (Primary Key), `name`, and a `UNIQUE` `email` address to prevent duplicate accounts.
-*   **courses:** Stores the available courses offered by the school. It includes a unique `id` (Primary Key) and the `title` of the course.
-*   **enrollments:** This is a join table that links students to courses. It contains a `student_id` (Foreign Key), `course_id` (Foreign Key), and the `grade` the student received. It also has a `UNIQUE(student_id, course_id)` constraint to prevent a student from enrolling in the same course twice.
-
+ 
+## Tables
+ 
+- **students** - one row per student: id, name and a unique email.
+- **courses** - one row per course: id, title and teacher.
+- **enrolments** - one row per student per course, with the grade.
+  Its primary key is the pair (student_id, course_id), so a student
+  cannot be enrolled on the same course twice.
+ 
 ## Relationships
-*   **One-to-Many:** A single student can have many enrollments (one-to-many), and a single course can have many enrollments (one-to-many).
-*   **Many-to-Many:** The relationship between `students` and `courses` is many-to-many (a student takes many courses, and a course has many students). 
-*   **Why a Join Table is Needed:** Relational databases cannot directly store many-to-many relationships. The `enrollments` table acts as an intermediary (a join table) to break the many-to-many relationship into two one-to-many relationships. It also provides a place to store data that belongs exclusively to the relationship itself—in this case, the `grade`.
-
-## Recommended Index
-I would add an index on the `student_id` and `course_id` columns in the `enrollments` table:
-```sql
-CREATE INDEX idx_enrollments_student ON enrollments(student_id);
-CREATE INDEX idx_enrollments_course ON enrollments(course_id);
-
-## SQL vs. NoSQL Decision
-For this school system, I would choose **SQL (Relational Database)**. The data is highly structured, consistent, and requires strict integrity constraints (e.g., a student must exist before enrolling, emails must be unique). SQL's support for ACID transactions, foreign keys, and complex `JOIN` queries makes it the ideal choice for handling structured academic records. NoSQL would be better suited for unstructured data, massive horizontal scaling without strict schemas, or rapid prototyping where relationships are not the primary concern.
+ 
+- Students and courses are **many-to-many**: a student takes many
+  courses and a course has many students.
+- A relational table cannot store a list of courses in one column,
+  so the **enrolments join table** stores one row per pairing.
+- This creates two **one-to-many** relationships: one student has
+  many enrolments, and one course has many enrolments.
+ 
+## Index
+ 
+    CREATE INDEX idx_enrolments_course ON enrolments(course_id);
+ 
+The primary key already makes lookups by student fast (student_id
+comes first). Teachers will often ask "who is on my course?", which
+searches by course_id, so a separate index on course_id speeds up
+that query.
+ 
+## SQL or NoSQL?
+ 
+SQL is the better choice. The data is highly structured and the
+relationships matter: every enrolment must point to a real student
+and a real course, a student must not enrol twice, and grades must
+not be lost. A relational database enforces all of these rules with
+keys and constraints, and JOINs answer questions like "all students
+on this course" easily.
