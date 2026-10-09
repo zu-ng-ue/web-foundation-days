@@ -54,3 +54,27 @@ Photos should **not** be stored inside the relational database (as BLOBs) becaus
                  (Photos)             ^
                                       |
                                  [ Queue ]
+
+## 6. Component Explanations (One Sentence Each)
+*   **CDN:** Caches static assets (photos) at edge locations worldwide to serve them to users with minimal latency.
+*   **Load Balancer:** Distributes incoming network traffic across multiple app servers to ensure high availability and prevent any single server from being overwhelmed.
+*   **App Servers:** Execute the core application logic, handling user authentication, feed generation, and API requests.
+*   **Cache (Redis):** Stores frequently accessed data (like recent feeds or user sessions) in memory to drastically reduce the load on the database.
+*   **Database (Master):** Stores relational metadata such as user accounts, follow relationships, and photo URLs.
+*   **Read Replica:** Offloads read queries (like viewing feeds) from the master database, allowing the system to scale horizontally for read-heavy traffic.
+*   **Object Storage:** Provides scalable, durable, and cost-effective storage for the actual photo and thumbnail files.
+*   **Queue:** Buffers incoming upload events to handle sudden spikes in traffic asynchronously.
+*   **Worker:** Consumes jobs from the queue to perform background tasks, specifically generating thumbnails from the uploaded photos.
+
+## 7. Step-by-Step Upload Flow
+1.  **Request Upload URL:** The user's device sends a request to the App Server to upload a photo.
+2.  **Generate Pre-signed URL:** The App Server validates the user's authentication, then generates a secure, pre-signed URL that grants temporary upload access to the Object Storage.
+3.  **Direct Upload:** The user's device uploads the 2 MB photo directly to Object Storage using the pre-signed URL. This bypasses the App Server to save bandwidth and processing power.
+4.  **Queue Notification:** Once the upload is complete, Object Storage triggers an event that places a message onto the Queue.
+5.  **Worker Processing:** A Worker picks up the job from the Queue, downloads the original photo, resizes it to create a 50 KB thumbnail, and uploads the thumbnail back to Object Storage.
+6.  **Metadata Update:** The Worker updates the Database with the final URLs of both the original photo and the generated thumbnail. The photo is now ready to appear in feeds.
+
+## 8. Trade-offs
+*   **Cost vs. Latency (CDN usage):** Using a CDN significantly reduces latency for users globally and reduces bandwidth costs on the origin servers. However, it adds an ongoing operational expense for the CDN service itself. The trade-off is paying more money for a much faster and more reliable user experience.
+*   **Consistency vs. Availability (Read Replicas):** Using read replicas improves read scalability and availability. However, it introduces eventual consistency. A user who just uploaded a photo might not see it immediately in their feed if their request is routed to a replica that hasn't synced with the master database yet. The trade-off is high scalability at the cost of strict immediate consistency.
+*   **Complexity vs. Scalability (Queues and Workers):** Offloading thumbnail generation to a queue and background workers prevents the app servers from blocking during uploads and handles traffic spikes gracefully. However, it significantly increases the architectural complexity (more moving parts, potential points of failure, harder to debug). The trade-off is easier maintainability in exchange for a system that can scale to millions of users.
