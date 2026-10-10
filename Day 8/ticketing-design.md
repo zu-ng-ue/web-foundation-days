@@ -77,3 +77,25 @@ Double-booking occurs when two users attempt to buy the exact same seat simultan
        |
        v
 [ Queue ] ---> [ Worker (Generates PDF tickets & sends emails) ]
+```
+
+## Component Explanations
+
+** · Load Balancer: Distributes incoming traffic across multiple app servers so no single server crashes.
+** · App Servers: Process API requests. They are stateless, meaning we can add more as traffic grows.
+** · Redis Cache & Lock Manager: Stores fast-access data and handles temporary seat holds to prevent double-booking without overloading the database.
+** · Primary Database: Handles all write operations (purchases).
+** · Read Replica: Handles all read operations (browsing events and seats), taking the load off the primary database.
+** · Queue & Worker: Handles background tasks (generating tickets, sending emails) so the user doesn't have to wait for them during checkout.
+
+## How it Survives the Big Sale
+
+** · Read Scaling: Thousands of users refreshing the page are served entirely by Redis and the Read Replica. The Primary Database is untouched.
+** · Write Protection: Redis locks prevent 180,000 of the 200,000 users from even attempting to write to the database, protecting it from crashing under the load.
+** · Asynchronous Processing: Heavy tasks like generating PDF tickets are offloaded to a Queue and Worker, keeping the API response time fast for the user.
+
+## 7. Trade-offs
+
+** · Consistency vs. Availability: We prioritize Consistency (CP system) for seat bookings. It is better to temporarily show an error to a user than to sell the same seat twice. However, for browsing events, we prioritize Availability (AP) by serving cached data.
+** · User Experience vs. Fairness: To prevent bots from instantly buying all tickets, we introduce a "Virtual Waiting Room" (Queue). This adds a small delay for real users (slightly worse UX) but ensures fairness so real fans get a chance to buy tickets.
+** · Complexity vs. Speed: Adding Redis distributed locks and a Virtual Waiting Room adds significant architectural complexity. However, without this complexity, the system would crash during the 200,000-user spike, making it a necessary trade-off.
